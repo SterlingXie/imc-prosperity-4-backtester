@@ -40,7 +40,7 @@ def prepare_state(state: TradingState, data: BacktestData) -> None:
 
         state.order_depths[product] = order_depth
 
-        state.listings[product] = Listing(product, product, 1)
+        state.listings[product] = Listing(product, product, '1')
 
     observation_row = data.observations.get(state.timestamp)
 
