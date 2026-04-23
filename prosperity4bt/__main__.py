@@ -1,3 +1,4 @@
+import json
 import sys
 from collections import defaultdict
 from datetime import datetime
@@ -5,12 +6,13 @@ from functools import reduce
 from importlib import import_module, metadata, reload
 from pathlib import Path
 from typing import Annotated, Any, Optional
+import uuid
 
 from typer import Argument, Option, Typer
 
 from prosperity4bt.data import has_day_data
 from prosperity4bt.file_reader import FileReader, FileSystemReader, PackageResourcesReader
-from prosperity4bt.models import BacktestResult, TradeMatchingMode
+from prosperity4bt.models import BacktestResult, TradeMatchingMode, ActivityLogRow
 from prosperity4bt.open import open_visualizer
 from prosperity4bt.runner import run_backtest
 
@@ -123,24 +125,16 @@ def merge_results(
 
     return BacktestResult(a.round_num, a.day_num, sandbox_logs, activity_logs, trades)
 
-
 def write_output(output_file: Path, merged_results: BacktestResult) -> None:
     output_file.parent.mkdir(parents=True, exist_ok=True)
     with output_file.open("w+", encoding="utf-8") as file:
-        file.write("Sandbox logs:\n")
-        for row in merged_results.sandbox_logs:
-            file.write(str(row))
-
-        file.write("\n\n\nActivities log:\n")
-        file.write(
-            "day;timestamp;product;bid_price_1;bid_volume_1;bid_price_2;bid_volume_2;bid_price_3;bid_volume_3;ask_price_1;ask_volume_1;ask_price_2;ask_volume_2;ask_price_3;ask_volume_3;mid_price;profit_and_loss\n"
-        )
-        file.write("\n".join(map(str, merged_results.activity_logs)))
-
-        file.write("\n\n\n\n\nTrade History:\n")
-        file.write("[\n")
-        file.write(",\n".join(map(str, merged_results.trades)))
-        file.write("]")
+        results_dict = {
+            "submissionId": str(uuid.uuid4()),
+            "activitiesLog": ActivityLogRow.HEADER + '\n' +'\n'.join([str(al) for al in merged_results.activity_logs]),
+            "logs": [l.to_dict() for l in merged_results.sandbox_logs],
+            "tradeHistory": [t.to_dict() for t in merged_results.trades]
+        }
+        file.write(json.dumps(results_dict))
 
 
 def print_overall_summary(results: list[BacktestResult]) -> None:
