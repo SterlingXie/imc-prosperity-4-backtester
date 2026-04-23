@@ -1,18 +1,18 @@
 import json
 import sys
+import uuid
 from collections import defaultdict
 from datetime import datetime
 from functools import reduce
 from importlib import import_module, metadata, reload
 from pathlib import Path
 from typing import Annotated, Any, Optional
-import uuid
 
 from typer import Argument, Option, Typer
 
 from prosperity4bt.data import has_day_data
 from prosperity4bt.file_reader import FileReader, FileSystemReader, PackageResourcesReader
-from prosperity4bt.models import BacktestResult, TradeMatchingMode, ActivityLogRow
+from prosperity4bt.models import ActivityLogRow, BacktestResult, TradeMatchingMode
 from prosperity4bt.open import open_visualizer
 from prosperity4bt.runner import run_backtest
 
@@ -130,9 +130,9 @@ def write_output(output_file: Path, merged_results: BacktestResult) -> None:
     with output_file.open("w+", encoding="utf-8") as file:
         results_dict = {
             "submissionId": str(uuid.uuid4()),
-            "activitiesLog": ActivityLogRow.HEADER + '\n' +'\n'.join([str(al) for al in merged_results.activity_logs]),
-            "logs": [l.to_dict() for l in merged_results.sandbox_logs],
-            "tradeHistory": [t.to_dict() for t in merged_results.trades]
+            "activitiesLog": ActivityLogRow.HEADER + '\n' +'\n'.join([str(log) for log in merged_results.activity_logs]),
+            "logs": [log.to_dict() for log in merged_results.sandbox_logs],
+            "tradeHistory": [trade.to_dict() for trade in merged_results.trades]
         }
         file.write(json.dumps(results_dict))
 
